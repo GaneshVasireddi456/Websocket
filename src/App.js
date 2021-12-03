@@ -1,25 +1,54 @@
-import logo from './logo.svg';
-import './App.css';
+import React from 'react';
+import { Client } from '@stomp/stompjs';
 
-function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+const SOCKET_URL = 'ws://172.17.12.176:8089/ws';
+
+class App extends React.Component {
+  constructor() {
+    super();
+    this.state = {
+      messages: 'You server message here.',
+    };
+  };
+
+  componentDidMount() {
+    let currentComponent = this;
+    let onConnected = () => {
+      console.log("Connected!!")
+      client.subscribe('/topic/message', function (msg) {
+        if (msg.body) {
+          var jsonBody = JSON.parse(msg.body);
+          if (jsonBody.message) {
+            currentComponent.setState({ messages: jsonBody.message })
+          }
+        }
+      });
+    }
+
+    let onDisconnected = () => {
+      console.log("Disconnected!!")
+    }
+
+    const client = new Client({
+      brokerURL: SOCKET_URL,
+      reconnectDelay: 5000,
+      heartbeatIncoming: 4000,
+      heartbeatOutgoing: 4000,
+      onConnect: onConnected,
+      onDisconnect: onDisconnected
+    });
+
+    client.activate();
+  };
+
+  render() {
+    return (
+      <div>
+        <div>{this.state.messages}</div>
+      </div>
+    );
+  }
+
 }
 
 export default App;
